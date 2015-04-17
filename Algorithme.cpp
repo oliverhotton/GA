@@ -48,7 +48,100 @@ void Algorithme::dijkstra(int* fs, int* aps,int **cout,int s,int* &pred,int* &d)
 			k++;
 		}
 	}
-	delete(b);
+	delete [] b;
+}
+
+void Algorithme::det_fpapp(int* fs, int* aps,int *&fp,int *&app){
+	int n = aps[0];
+	int nm = fs[0];
+	app = new int[n+1]; app[0]=n;
+	fp = new int[nm+1]; fp[0]=nm;
+	int *np = new int[n+1];
+	for(int i=1;i<=n;i++) np[i]=0;
+	for(int i=1;i<=nm;i++){
+		if(fs[i]!=0) np[fs[i]]++;
+	}
+	app[1]=1;
+	for(int i=1;i<n;i++) app[i+1] = app[i]+np[i]+1;
+	int k=1,t;
+	for(int i=1;i<=n;i++){
+		while((t=fs[k])!=0){
+			fp[app[t]]=i;
+			app[t]++;
+			k++;
+		}
+		k++;
+	}
+	fp[app[n]]=0;
+	for(int i=n-1;i>=1;i--){
+		fp[app[i]]=0;
+		app[i+1] = app[i]+1;
+	}
+	app[1]=1;
+	delete [] np;
+}
+
+void Algorithme::bellman(int* fs, int* aps,int* poids,int s,int* &pred,int* &d){
+	int **a,*fp,*app;
+	int n = aps[0];
+	all2matrix(fs,aps,poids,a);
+	det_fpapp(fs,aps,fp,app);
+	d = new int[n+1]; d[0] = n; d[s] = 0;
+	pred = new int[n+1]; pred[0] = n; pred[s] = 0;
+	bool *S = new bool[n+1];
+	for(int i=0;i<=n;i++) S[i] = false;
+	S[0] = true;
+	S[s] = true;
+	vector<int> X;
+	for(int i=1;i<s;i++) X.push_back(i);
+	for(int i=s+1;i<=n;i++) X.push_back(i);
+	X.push_back(-1);
+	int min,nb,min_t,k,l,t,valeur;
+	nb = n-1;
+	bool existe = true;
+	cout<<"before while"<<endl;
+	while(nb>0&&existe){
+		k = 0;
+		existe = false;
+		cout<<"1st while"<<endl;
+		while(!existe&&X[k]!=-1){
+			cout<<"2nd while : "<<X[k]<<endl;
+			min = INT_MAX;
+			min_t = 0;
+			l = app[X[k]];
+			existe = true;
+			while((t=fp[l])!=0){
+				if(!S[t]){
+					existe = false;
+					break;
+				}
+				if(d[t]<INT_MAX&&(valeur=d[t]+a[t][X[k]])<min){
+					min = valeur;
+					min_t = t;
+				}
+				l++;
+			}
+			if(existe){
+				d[X[k]] = min;
+				pred[X[k]] = min_t;
+				S[X[k]] = true;
+				for(int j=k;j<(X.size()-1);j++){
+					X[j] = X[j+1];
+				}
+				X.pop_back();
+				nb--;
+			}
+			k++;
+		}				
+	}
+	
+	delete [] S;
+	delete [] fp;
+	delete [] app;
+	for(int i=0;i<=n;i++){
+		delete [] a[i];
+	}
+	delete [] a; 
 }
 
 void Algorithme::joindre(int i,int j,int *prem,int *cc,int *pilch){
@@ -95,8 +188,6 @@ void Algorithme::kruskal(arete *g,int n,int m,arete *&t){
 	}
 	
 	while(k<(n-1)){
-		std::cout<<"ca marche bien"<<std::endl;
-		std::cout<<k<<std::endl;
 		int i = cc[g[l].s];
 		int j = cc[g[l].t];
 		if(i!=j){
@@ -106,9 +197,48 @@ void Algorithme::kruskal(arete *g,int n,int m,arete *&t){
 		l++;
 	}
 	
-	delete(pilch);
-	delete(prem);
-	delete(cc);
+	delete [] pilch;
+	delete [] prem;
+	delete [] cc;
+	
+}
+
+void Algorithme::prim(arete *g,int n,int m,int s,arete *&t){
+	bool *X = new bool[n+1];
+	vector<int> aretes;
+	t = new arete[n-1];
+	for(int i=0;i<m;i++) aretes.push_back(i);
+	aretes.push_back(-1);
+	for(int i=0;i<=n;i++) X[i] = false;
+	X[s] = true; 
+	int k,min_k,l=0;
+	long min;
+	arete a;
+	while(l<(n-1)){
+		min = INT_MAX;
+		k=0;		
+		while(k<aretes.size()-1){
+			if((!X[g[aretes[k]].s]&&X[g[aretes[k]].t])||(X[g[aretes[k]].s]&&!X[g[aretes[k]].t])){
+				if(g[aretes[k]].cout<min){
+					min = g[aretes[k]].cout;
+					min_k = k;
+				}
+			}
+			k++;
+		}
+		t[l++] = g[aretes[min_k]];
+		if(X[g[aretes[min_k]].s]){
+			X[g[aretes[min_k]].t] = true;
+		}
+		else{
+			X[g[aretes[min_k]].s] = true;
+		}
+		for(int i=min_k;i<(aretes.size()-1);i++){
+			aretes[i] = aretes[i+1];
+		}
+		aretes.pop_back();
+	}
+	delete [] X;
 	
 }
 
@@ -159,9 +289,9 @@ void Algorithme::prufer(arete *g,int n,int *&t){
 		aretes.pop_back();
 		size--;	
 	}
-	delete(s);	
+	delete [] s;	
 }
-void Algorithme::matrix2all(int **&a,int *&fs,int *&aps,int *&poids){
+void Algorithme::matrix2all(int **a,int *&fs,int *&aps,int *&poids){
 	int n,m;
 	n = a[0][0];
 	m = a[0][1];
@@ -179,16 +309,16 @@ void Algorithme::matrix2all(int **&a,int *&fs,int *&aps,int *&poids){
 			}
 		}
 		fs[k] = 0;
-		poids[k] = -1;
+		poids[k] = INT_MAX;
 		k++;
 	}
 	for(int i=0;i<=n;i++){
-		delete(a[i]);
+		delete [] a[i];
 	}
-	delete(a);
+	delete [] a;
 }
 
-void Algorithme::all2matrix(int *&fs,int *&aps,int *&poids,int **&a){
+void Algorithme::all2matrix(int *fs,int *aps,int *poids,int **&a){
 	int n = aps[0];
 	int m = fs[0] - n;
 	a = new int*[n+1];
@@ -201,15 +331,11 @@ void Algorithme::all2matrix(int *&fs,int *&aps,int *&poids,int **&a){
 	for(int i=1;i<=n;i++){
 		for(int l=aps[i];fs[l]>0;l++){
 			a[i][fs[l]] = poids[l];
-		}
-		
-	}
-	delete(fs);
-	delete(aps);
-	delete(poids);
+		}		
+	}	
 }
 
-void Algorithme::matrix2aretes(int **&a,arete *&g,int &n,int &m){
+void Algorithme::matrix2aretes(int **a,arete *&g,int &n,int &m){
 	n = a[0][0];
 	m = a[0][1]/2;
 	g = new arete[m];
@@ -227,13 +353,13 @@ void Algorithme::matrix2aretes(int **&a,arete *&g,int &n,int &m){
 	}
 	
 	for(int i=0;i<=n;i++){
-		delete(a[i]);
+		delete [] a[i];
 	}
-	delete(a);
+	delete [] a;
 	
 }
 
-void Algorithme::aretes2matrix(arete *&g,int **&a,int n,int m){
+void Algorithme::aretes2matrix(arete *g,int **&a,int n,int m){
 	a = new int*[n+1];
 	a[0] = new int[2]; a[0][0] = n; a[0][1] = m*2;
 	for(int i=1;i<=n;i++){
@@ -245,6 +371,211 @@ void Algorithme::aretes2matrix(arete *&g,int **&a,int n,int m){
 		a[g[i].s][g[i].t] = g[i].cout;
 		a[g[i].t][g[i].s] = g[i].cout;
 	}
-	delete(g);
+	delete [] g;
 }
 
+principale* Algorithme::adresse(principale* pri,int sommet){
+	principale* tmp = pri;
+	while(tmp != NULL){
+		if(tmp->num == sommet) return tmp;
+		tmp = tmp->suiv;
+	}
+	return NULL;
+}
+
+void Algorithme::all2lists(int *fs,int *aps,int *poids,principale *&pri){
+	int n = aps[0];
+	pri = new principale;
+	principale *tmp = pri;
+	for(int i=1;i<n;i++){
+		tmp->num = i;
+		tmp->suiv = new principale;
+		tmp->succ = new secondaire;
+		tmp = tmp->suiv;
+	}
+	tmp->num = n;
+	tmp->suiv = NULL;
+	tmp->succ = new secondaire;
+	
+	int l,t,i;
+	tmp = pri;
+	secondaire *tmpsucc,*succlast;
+	while(tmp!=NULL){
+		i = tmp->num;
+		tmpsucc = tmp->succ;		
+		l = aps[i];
+		while((t=fs[l])!=0){
+			tmpsucc->som = adresse(pri,t);
+			tmpsucc->suiv = new secondaire;
+			tmpsucc->cout = poids[l];
+			l++;
+			succlast = tmpsucc;
+			tmpsucc = tmpsucc->suiv;
+		}
+		delete tmpsucc;
+		succlast->suiv = NULL;
+		tmp = tmp->suiv;
+	}
+	
+	delete [] fs;
+	delete [] aps;
+	delete [] poids;
+	
+}
+
+void Algorithme::lists2all(principale *pri,int *&fs,int *&aps,int *&poids){
+	int n=0,m=0,k;
+	principale *tmp;
+	secondaire *tmpsucc;
+	tmp = pri;
+	while(tmp != NULL){
+		n++;
+		k = 0;
+		tmpsucc = tmp->succ;
+		while(tmpsucc != NULL){
+			m++;
+			tmpsucc = tmpsucc->suiv;
+		}
+		tmp = tmp->suiv;
+	}
+	
+	fs = new int[n+m+1]; fs[0] = n+m;
+	poids = new int[n+m+1]; poids[0] = n+m;
+	aps = new int[n+1]; aps[0] = n;
+	k = 1;
+	tmp = pri;
+	while(tmp != NULL){
+		tmpsucc = tmp->succ;
+		aps[tmp->num] = k;
+		while(tmpsucc != NULL){
+			fs[k] = tmpsucc->som->num;
+			poids[k++] = tmpsucc->cout;
+			tmpsucc = tmpsucc->suiv;
+		}
+		fs[k] = 0;
+		poids[k++] = INT_MAX;				
+		tmp = tmp->suiv;
+	}
+	
+	del_lists(pri);
+}
+
+void Algorithme::affiche_lists(principale *pri){
+	principale *temp;
+	secondaire *tempsucc;
+	temp = pri;
+	while(temp!=NULL){
+		tempsucc = temp->succ;
+		while(tempsucc!=NULL){
+			cout<<temp->num<<"->"<<tempsucc->som->num<<endl;
+			tempsucc = tempsucc->suiv;
+		}
+		temp = temp->suiv;
+	}		
+}
+
+void Algorithme::del_lists(principale *&pri){
+	principale *pri1,*pri2;
+	secondaire *sec1,*sec2;
+	pri1 = pri;
+	while(pri1 != NULL){
+		pri2 = pri1->suiv; 
+		sec1 = pri1->succ;
+		while(sec1 != NULL){
+			sec2 = sec1->suiv;
+			delete sec1 ;
+			sec1 = sec2;
+		}
+		delete pri1;
+		pri1 = pri2;
+	}
+}
+
+void Algorithme::det_ddi(int *fs,int *aps,int *&ddi){
+	int n = aps[0];
+	ddi = new int[n+1];
+	for(int i=1;i<=n;i++) ddi[i]=0;
+	ddi[0] = n;
+	int l,t;
+	for(int i=1;i<=n;i++){
+		l = aps[i];
+		while((t=fs[l])!=0){
+			ddi[t]++;
+			l++; 
+		}
+	}
+}
+
+int Algorithme::det_rang(int *fs,int *aps,int *&rang){
+	int n = aps[0];
+	int *ddi,*pilch,/**prem,*/k=-1,s,t;
+	det_ddi(fs,aps,ddi);
+	rang = new int[n+1];
+	rang[0] = n;
+	pilch = new int[n+1];
+	//prem = new int[n];
+	pilch[0] = 0;
+	for(int i=1;i<=n;i++){
+		rang[i] = -1;
+		if(ddi[i]==0){
+			pilch[i] = pilch[0];
+			pilch[0] = i;
+		}
+	}
+	
+	s = pilch[0];
+	//prem[0] = s;
+	while(pilch[0]>0){
+		k++;
+		pilch[0] = 0;
+		while(s>0){
+			rang[s] = k;
+			for(int l=aps[s];(t=fs[l])>0;l++){
+				ddi[t]--;
+				if(ddi[t]==0){
+					pilch[t] = pilch[0];
+					pilch[0] = t;
+				}
+			}
+			s = pilch[s];
+		}
+		s = pilch[0];
+		//prem[k+1] = s;
+		
+	}
+	
+	delete [] ddi;
+	delete [] pilch;
+	//delete(prem);
+	
+	return k;
+}
+
+void Algorithme::det_dist(int *fs,int *aps,int s,int *&marque){
+	int n = aps[0];
+	marque = new int[n+1];
+	marque[0] = n;
+	for(int i=1;i<=n;i++) marque[i] = -1;
+	int *fa = new int[n+1];
+	int t=1,q=2,k=2,d=0;
+	fa[1] = s;
+	marque[s] = 0;
+	while(t<q){
+		d++;
+		for(int j=t;j<q;j++){
+			int l = aps[fa[j]];
+			while(fs[l]!=0){
+				if(marque[fs[l]] == -1){
+					marque[fs[l]] = d;
+					fa[k++] = fs[l];
+				}
+				l++;
+			}
+		}
+		t = q;
+		q = k;
+	}
+	
+	delete [] fa;
+	
+}
