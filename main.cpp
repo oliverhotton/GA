@@ -2,7 +2,7 @@
 
 #include <iostream>
 using namespace std;
-
+using namespace algo_ns;
 /* run this program using the console pauser or add your own getch, system("pause") or input loop */
 
 int main(int argc, char** argv) {
@@ -827,6 +827,26 @@ int main(int argc, char** argv) {
 	
 	algo.del_matrice(cout1);
 	
+	/*Test saisir*/
+	algo.saisir(fp,app,poids);
+	cout<<"****Test Saisir****"<<endl;
+	cout<<"app : ["<<app[0];
+	for(int i=1;i<=app[0];i++){
+		cout<<","<<app[i];
+	}
+	cout<<"]"<<endl;
+	cout<<"fp : ["<<fp[0];
+	for(int i=1;i<=fp[0];i++){
+		cout<<","<<fp[i];
+	}
+	cout<<"]"<<endl;
+	cout<<"poids : ["<<poids[0];
+	for(int i=1;i<=poids[0];i++){
+		cout<<","<<poids[i];
+	}
+	cout<<"]"<<endl;
+	
+	algo.del_fs_aps_poids(fp,app,poids);	
 			
 	return 0;
 }

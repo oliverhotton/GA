@@ -1,9 +1,43 @@
 #include "Algorithme.h"
 #include <iostream>
 #include <vector>
-#define INT_MAX 2147483647
+#include <climits>
 
 using namespace std;
+using namespace algo_ns;
+
+void Algorithme::chemin_critiques(int *fp,int *app,int *poids,int *&fpc, int *&appc,int *&lc){
+	int n = app[0];
+	int kc=1,k,j,lg;
+	appc = new int[n+1]; appc[0] = n;
+	lc = new int[n+1]; lc[0] = n;
+	fpc = new int[fp[0]+1]; fpc[0] = fp[0];
+	
+	fpc[1] = 0;
+	for(int i=1;i<=n;i++) lc[i] = -1;
+	lc[1] = 0;
+	for(int i=2;i<=n;i++){
+		k = app[i]; appc[i] = kc+1;
+		while(j=fp[k]!=0){
+			lg = lc[j] + poids[k];
+			if(lg>=lc[i]){
+				if(lg>lc[i]){
+					lc[i] = lg;
+					kc = appc[i];
+					fpc[kc] = j;
+				}
+				else{
+					kc++;
+					fpc[kc] = k;
+				}
+			}
+			k++;
+		}
+		kc++;
+		fpc[kc] = 0;		
+	}
+	fpc[0] = kc;
+}
 
 void Algorithme::dijkstra(int* fs, int* aps,int **cout,int s,int* &pred,int* &d){
 	int n = aps[0];int x,j,m,k;
@@ -340,7 +374,7 @@ void Algorithme::matrix2all(int **a,int *&fs,int *&aps,int *&poids){
 	for(int i=1;i<=n;i++){
 		aps[i] = k;
 		for(int j=1;j<=n;j++){
-			if(a[i][j]<INT_MAX){
+			if(a[i][j]<INT_MAX&&i!=j){
 				fs[k] = j;
 				poids[k] = a[i][j];
 				k++;
@@ -360,6 +394,7 @@ void Algorithme::all2matrix(int *fs,int *aps,int *poids,int **&a){
 	for(int i=1;i<=n;i++){
 		a[i] = new int[n+1];
 		for(int j=1;j<=n;j++) a[i][j] = INT_MAX;
+		a[i][i] = 0;
 	}
 	
 	for(int i=1;i<=n;i++){
@@ -393,6 +428,7 @@ void Algorithme::aretes2matrix(arete *g,int **&a,int n,int m){
 	for(int i=1;i<=n;i++){
 		a[i] = new int[n+1];
 		for(int j=1;j<=n;j++) a[i][j] = INT_MAX;
+		a[i][i] = 0;
 	}
 	
 	for(int i=0;i<m;i++){
@@ -636,4 +672,59 @@ void Algorithme::del_matrice(int **a){
 
 void Algorithme::del_aretes(arete *g){
 	delete [] g;	
+}
+
+void Algorithme::saisir(int *&fs,int *&aps,int *&poids){
+	int n,**a;
+	cout<<"Nombre de sommets : ";
+	while((cin>>n)==NULL){
+		cin.clear();
+		cin.ignore();
+		cout<<endl;
+		cout<<"Saisir un entier : ";
+	}
+	if(n<1) return;
+	a = new int*[n+1];
+	a[0] = new int[2];
+	for(int i=1;i<=n;i++) a[i] = new int[n+1];
+	a[0][0] = n;
+	for(int i=1;i<=n;i++){
+		for(int j=1;j<=n;j++)
+			a[i][j] = INT_MAX;
+		a[i][i] = 0;	
+		
+	}
+	int s,t,poid;
+	char c;
+	bool correct_input = true;
+	int k = 0;
+	while(correct_input){
+		cout<<"Saisir un arc avec 2 sommets "<<endl;
+		cout<<"Sommet depart : ";
+		cin>>s;
+		cout<<"Somme destination : ";
+		cin>>t;
+		cout<<"Cout : ";
+		cin>>poid;
+		cout<<endl;
+		if(!s||!t||s==t||s<1||t<1||s>n||t>n){
+			cout<<"ERREUR!"<<endl;
+			cin.clear();
+			cin.ignore();
+			correct_input = false;	
+		}		
+		if(correct_input){
+			a[s][t] = poid;	
+			k++;
+	    }
+	    cout<<"Continuer?(y/n) ";
+	    cin>>c;
+	    if(c=='y') correct_input = true;
+	    else correct_input = false;	    
+	}
+	a[0][1] = k;
+	cout<<endl;
+	matrix2all(a,fs,aps,poids);
+	
+	del_matrice(a);
 }

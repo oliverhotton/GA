@@ -1,6 +1,7 @@
 #ifndef ALGORITHME_H 
 #define ALGORITHME_H
 
+namespace algo_ns{
 typedef struct {
 	int s,t;
 	long cout;
@@ -20,6 +21,7 @@ typedef struct soma {
 
 class Algorithme {
 	public:
+		void chemin_critiques(int *fp,int *app,int *poids,int *&fpc, int *&appc,int *&lc);
 		void dijkstra(int* fs, int* aps,int **cout,int s,int* &pred,int* &d);
 		void det_fpapp(int* fs, int* aps,int *&fp,int *&app);
 		void bellman(int* fs, int* aps,int* poids,int s,int* &pred,int* &d); //sans circuit
@@ -47,9 +49,11 @@ class Algorithme {
 		void det_ddi(int *fs,int *aps,int *&ddi);
 		int det_rang(int *fs,int *aps,int *&rang);
 		void det_dist(int *fs,int *aps,int s,int *&marque);
+		
+		void saisir(int *&fs,int *&aps,int *&poids);
 	
 	private:
 		void joindre(int i,int j,int *prem, int *cc,int *pilch);
 };
-
+}
 #endif
