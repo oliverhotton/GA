@@ -18,7 +18,8 @@ void Algorithme::dijkstra(int* fs, int* aps,int **cout,int s,int* &pred,int* &d)
 		pred[i] = s;
 		b[i] = true;
 		
-	} 
+	}
+	pred[s] = 0; 
 	d[s] = 0;
 	b[s] = false;
 	
@@ -99,13 +100,10 @@ void Algorithme::bellman(int* fs, int* aps,int* poids,int s,int* &pred,int* &d){
 	int min,nb,min_t,k,l,t,valeur;
 	nb = n-1;
 	bool existe = true;
-	cout<<"before while"<<endl;
 	while(nb>0&&existe){
 		k = 0;
 		existe = false;
-		cout<<"1st while"<<endl;
 		while(!existe&&X[k]!=-1){
-			cout<<"2nd while : "<<X[k]<<endl;
 			min = INT_MAX;
 			min_t = 0;
 			l = app[X[k]];
@@ -138,10 +136,50 @@ void Algorithme::bellman(int* fs, int* aps,int* poids,int s,int* &pred,int* &d){
 	delete [] S;
 	delete [] fp;
 	delete [] app;
-	for(int i=0;i<=n;i++){
-		delete [] a[i];
+	del_matrice(a);
+}
+
+bool Algorithme::dantzig(int **a,int **&m){
+	int n = a[0][0];
+	m = new int*[n+1];
+	
+	m[0] = new int[2]; m[0][0] = a[0][0]; m[0][1] = a[0][1];
+	for(int i=1;i<=n;i++) m[i] = new int[n+1];
+	for(int i=1;i<=n;i++)
+		for(int j=1;j<=n;j++)
+			m[i][j] = a[i][j];		
+	int x;
+	for(int k=1;k<n;k++){
+		for(int i=1;i<=k;i++){
+			for(int j=1;j<=k;j++){
+				if((x=m[i][j]+m[j][k+1])<m[i][k+1]&&m[i][j]<(INT_MAX/2)&&m[j][k+1]<(INT_MAX/2)){
+					m[i][k+1] = x;
+				}
+				if((x=m[k+1][j]+m[j][i])<m[k+1][i]&&m[k+1][j]<(INT_MAX/2)&&m[j][i]<(INT_MAX/2)){				
+					m[k+1][i]=x;
+				}
+			}
+			if((x=m[k+1][i]+m[i][k+1])<0&&m[k+1][i]<(INT_MAX/2)&&m[i][k+1]<(INT_MAX/2)){
+				return false;
+			}			
+		}
+		for(int i=1;i<=k;i++){
+			for(int j=1;j<=k;j++)
+				if((x=m[i][k+1]+m[k+1][j])<m[i][j]&&m[i][k+1]<(INT_MAX/2)&&m[k+1][j]<(INT_MAX/2)){				
+					m[i][j] = x;
+				}
+		}
 	}
-	delete [] a; 
+	return true;		
+}
+
+bool Algorithme::estSymetrique(int **a){
+	int n = a[0][0];
+	for(int i=1;i<=n;i++)
+		for(int j=i+1;j<=n;j++)
+			if(a[i][j]!=a[j][i])
+				return false;
+	return true;
 }
 
 void Algorithme::joindre(int i,int j,int *prem,int *cc,int *pilch){
@@ -312,10 +350,6 @@ void Algorithme::matrix2all(int **a,int *&fs,int *&aps,int *&poids){
 		poids[k] = INT_MAX;
 		k++;
 	}
-	for(int i=0;i<=n;i++){
-		delete [] a[i];
-	}
-	delete [] a;
 }
 
 void Algorithme::all2matrix(int *fs,int *aps,int *poids,int **&a){
@@ -350,13 +384,7 @@ void Algorithme::matrix2aretes(int **a,arete *&g,int &n,int &m){
 				g[k++] = ar;
 			}
 		}
-	}
-	
-	for(int i=0;i<=n;i++){
-		delete [] a[i];
-	}
-	delete [] a;
-	
+	}		
 }
 
 void Algorithme::aretes2matrix(arete *g,int **&a,int n,int m){
@@ -371,7 +399,22 @@ void Algorithme::aretes2matrix(arete *g,int **&a,int n,int m){
 		a[g[i].s][g[i].t] = g[i].cout;
 		a[g[i].t][g[i].s] = g[i].cout;
 	}
-	delete [] g;
+}
+
+void Algorithme::pred2fsaps(int* pred,int *&fs,int *&aps){
+	int n = pred[0];
+	int *fp,*app;
+	fp = new int[n+n]; fp[0] = n+n-1;
+	app = new int[n+1]; app[0] = n;
+	int k=1;
+	for(int i=1;i<=n;i++){
+		app[i] = k;
+		if(pred[i]!=0)
+			fp[k++] = pred[i];
+		fp[k++] = 0;	
+	}
+	det_fpapp(fp,app,fs,aps);
+	del_fs_aps(fp,app);	
 }
 
 principale* Algorithme::adresse(principale* pri,int sommet){
@@ -415,12 +458,7 @@ void Algorithme::all2lists(int *fs,int *aps,int *poids,principale *&pri){
 		delete tmpsucc;
 		succlast->suiv = NULL;
 		tmp = tmp->suiv;
-	}
-	
-	delete [] fs;
-	delete [] aps;
-	delete [] poids;
-	
+	}		
 }
 
 void Algorithme::lists2all(principale *pri,int *&fs,int *&aps,int *&poids){
@@ -455,9 +493,7 @@ void Algorithme::lists2all(principale *pri,int *&fs,int *&aps,int *&poids){
 		fs[k] = 0;
 		poids[k++] = INT_MAX;				
 		tmp = tmp->suiv;
-	}
-	
-	del_lists(pri);
+	}	
 }
 
 void Algorithme::affiche_lists(principale *pri){
@@ -578,4 +614,26 @@ void Algorithme::det_dist(int *fs,int *aps,int s,int *&marque){
 	
 	delete [] fa;
 	
+}
+
+void Algorithme::del_fs_aps(int* fs,int* aps){
+	delete [] fs;
+	delete [] aps;	
+}
+
+void Algorithme::del_fs_aps_poids(int* fs,int* aps,int *poids){
+	del_fs_aps(fs,aps);
+	delete [] poids;
+}
+
+void Algorithme::del_matrice(int **a){
+	int n = a[0][0];
+	for(int i=0;i<=n;i++){
+		delete [] a[i];
+	}
+	delete [] a;
+}
+
+void Algorithme::del_aretes(arete *g){
+	delete [] g;	
 }

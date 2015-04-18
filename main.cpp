@@ -6,13 +6,14 @@ using namespace std;
 /* run this program using the console pauser or add your own getch, system("pause") or input loop */
 
 int main(int argc, char** argv) {
-	int *fs,*aps,**cout1,s,*pred,*d;
+	int *fs,*aps,**cout1,s,*pred,*d,**m_dantzig;
 	int n = 7;
 	int m = 12;
 	fs = new int[n+m+1];fs[0]=n+m;
 	aps = new int[n+1];aps[0]=n;
 	cout1 = new int*[n+1];
-	for(int i=0;i<=n;i++){
+	cout1[0] = new int[2]; cout1[0][0] = n; cout1[0][1] = m;
+	for(int i=1;i<=n;i++){
 		cout1[i] = new int[n+1];
 	}
 	fs[1] = 2;
@@ -65,21 +66,34 @@ int main(int argc, char** argv) {
 	s = 1;
 	
 	Algorithme algo;
-	
+		
 	algo.dijkstra(fs,aps,cout1,s,pred,d);
 	cout<<"****Test Djikstra****"<<endl;
-	cout<<"pred : ["<<pred[1];
-	for(int i=2;i<=n;i++){
+	cout<<"pred : ["<<pred[0];
+	for(int i=1;i<=n;i++){
 		cout<<","<<pred[i];
 	}
 	cout<<"]"<<endl;
-	
-	cout<<"d : ["<<d[1];
-	for(int i=2;i<=n;i++){
+			
+	cout<<"d : ["<<d[0];
+	for(int i=1;i<=n;i++){
 		cout<<","<<d[i];
 	}
 	cout<<"]"<<endl;
 	
+	int *fs1,*aps1;
+	algo.pred2fsaps(pred,fs1,aps1);
+	cout<<"aps : ["<<aps1[0];
+	for(int i=1;i<=n;i++){
+		cout<<","<<aps1[i];
+	}
+	cout<<"]"<<endl;
+	cout<<"fs : ["<<fs1[0];
+	for(int i=1;i<=fs1[0];i++){
+		cout<<","<<fs1[i];
+	}
+	cout<<"]"<<endl;
+	algo.del_fs_aps(fs1,aps1);	
 	/*Test fs aps 2 fp app*/
 	int *fp,*app;
 	algo.det_fpapp(fs,aps,fp,app);
@@ -96,16 +110,77 @@ int main(int argc, char** argv) {
 	cout<<"]"<<endl;
 	
 	
-	delete [] fs;
-	delete [] aps;
-	delete [] fp;
-	delete [] app;
-	for(int i=0;i<=n;i++){
-		delete [] cout1[i];
-	}
-	delete [] cout1;
+	algo.del_fs_aps(fs,aps);
+	algo.del_fs_aps(fp,app);
+	algo.del_matrice(cout1);
 	delete [] pred;
 	delete [] d;
+	
+	/*Test dantzig*/
+	n = 5;
+	m = 7;
+
+	cout1 = new int*[n+1];
+	cout1[0] = new int[2]; cout1[0][0] = n; cout1[0][1] = m;
+	for(int i=1;i<=n;i++){
+		cout1[i] = new int[n+1];
+	}
+	
+	for(int i=1;i<=n;i++){
+		for(int j=1;j<=n;j++){
+			cout1[i][j] = INT_MAX;
+		}
+	}
+	
+	cout1[1][1] = 0;
+	cout1[2][2] = 0;
+	cout1[3][3] = 0;
+	cout1[4][4] = 0;
+	cout1[5][5] = 0;
+	cout1[1][2] = -1;
+	cout1[1][3] = 4;
+	cout1[2][4] = 6;
+	cout1[2][5] = -2;
+	cout1[3][4] = 2;
+	cout1[4][1] = -5;
+	cout1[4][5] = 0;
+	
+	bool cir = algo.dantzig(cout1,m_dantzig);
+	if(!cir) cout<<"circuit"<<endl;
+	cout<<"****Test Dantzig****"<<endl;
+	cout<<"Matrix origin:"<<endl;
+	for(int i=1;i<=n;i++){
+		cout<<"| ";
+		for(int j=1;j<=n;j++){
+			switch(cout1[i][j]){
+				case INT_MAX:
+					cout<<"m ";
+					break;
+				default:
+					cout<<cout1[i][j]<<" ";
+					break;	
+			}
+		}
+		cout<<"|"<<endl;
+	}
+	cout<<"Matrix dantzig:"<<endl;
+	for(int i=1;i<=n;i++){
+		cout<<"| ";
+		for(int j=1;j<=n;j++){
+			switch(m_dantzig[i][j]){
+				case INT_MAX:
+					cout<<"m ";
+					break;
+				default:
+					cout<<m_dantzig[i][j]<<" ";
+					break;	
+			}
+		}
+		cout<<"|"<<endl;
+	}
+	algo.del_matrice(cout1);
+	algo.del_matrice(m_dantzig);
+	
 	/*Test kruskal*/
 	n=8;
 	m=13;
@@ -330,6 +405,7 @@ int main(int argc, char** argv) {
 		cout<<","<<poids[i];
 	}
 	cout<<"]"<<endl;
+	algo.del_matrice(matrix);
 	
 	algo.all2matrix(fs,aps,poids,matrix);
 	cout<<"****Test all2matrix****"<<endl;
@@ -348,14 +424,9 @@ int main(int argc, char** argv) {
 		}
 		cout<<"|"<<endl;
 	}
-	
-	for(int i=0;i<=n;i++){
-		delete [] matrix[i];
-	}			
-	delete [] matrix;
-	delete(fs);
-	delete(aps);
-	delete(poids);
+				
+	algo.del_matrice(matrix);
+	algo.del_fs_aps_poids(fs,aps,poids);
 	
 	n=4;m=4;
 	g = new arete[4];
@@ -397,12 +468,15 @@ int main(int argc, char** argv) {
 		}
 		cout<<"|"<<endl;
 	}
+	algo.del_aretes(g);
 	
 	algo.matrix2aretes(matrix,g,n,m);
 	cout<<"****Test matrix2arete****"<<endl;
 	for(int i=0;i<m;i++){
 		cout<<"["<<g[i].s<<","<<g[i].t<<","<<g[i].cout<<"]"<<endl;
 	}
+	
+	algo.del_matrice(matrix);
 	delete [] g;
 	
 	/*Test ddi*/
@@ -447,8 +521,7 @@ int main(int argc, char** argv) {
 		cout<<","<<ddi[i];
 	}
 	cout<<"]"<<endl;
-	delete [] fs;
-	delete [] aps;
+	algo.del_fs_aps(fs,aps);
 	delete [] ddi;
 	
 	/*Test rang*/
@@ -502,8 +575,7 @@ int main(int argc, char** argv) {
 	}
 	cout<<"]"<<endl;	
 	
-	delete [] fs;
-	delete [] aps;
+	algo.del_fs_aps(fs,aps);
 	delete [] rang;
 	
 	/*Test distances*/
@@ -548,8 +620,7 @@ int main(int argc, char** argv) {
 	}
 	cout<<"]"<<endl;
 	
-	delete [] fs;
-	delete [] aps;
+	algo.del_fs_aps(fs,aps);
 	delete [] marque;
 	
 	/*Test all2lists*/
@@ -614,6 +685,7 @@ int main(int argc, char** argv) {
 	algo.all2lists(fs,aps,poids,pri);
 	cout<<"****Test all2lists****"<<endl;
 	algo.affiche_lists(pri);
+	algo.del_fs_aps_poids(fs,aps,poids);
 	
 	/*Test lists2all*/
 	algo.lists2all(pri,fs,aps,poids);
@@ -635,10 +707,8 @@ int main(int argc, char** argv) {
 		cout<<","<<poids[i];
 	}
 	cout<<"]"<<endl;
-	delete [] aps;
-	delete [] fs;
-	delete [] poids;
-	
+	algo.del_fs_aps_poids(fs,aps,poids);
+	algo.del_lists(pri);
 	
 	/*Test bellman*/
 	n = 6;
@@ -699,8 +769,7 @@ int main(int argc, char** argv) {
 		cout<<","<<fp[i];
 	}
 	cout<<"]"<<endl;
-	delete [] fp;
-	delete [] app;
+	algo.del_fs_aps(fp,app);
 	
 	algo.bellman(fs,aps,poids,s,pred,d);
 	
@@ -717,9 +786,47 @@ int main(int argc, char** argv) {
 	
 	delete [] d;
 	delete [] pred;
-	delete [] aps;
-	delete [] fs;
-	delete [] poids;
+	algo.del_fs_aps_poids(fs,aps,poids);
+	
+	n = 5;
+	m = 7;
+	//n = 7;
+	//m = 12;
+	cout1 = new int*[n+1];
+	cout1[0] = new int[2]; cout1[0][0] = n; cout1[0][1] = m;
+	for(int i=1;i<=n;i++){
+		cout1[i] = new int[n+1];
+	}
+	
+	for(int i=1;i<=n;i++){
+		for(int j=1;j<=n;j++){
+			cout1[i][j] = INT_MAX;
+		}
+	}
+	
+	/*Test estSymetrique*/
+	cout1[1][1] = 0;
+	cout1[2][2] = 0;
+	cout1[3][3] = 0;
+	cout1[4][4] = 0;
+	cout1[5][5] = 0;
+	cout1[1][2] = -1;
+	cout1[2][1] = -1;
+	cout1[2][4] = 6;
+	cout1[4][2] = 6;
+	cout1[3][4] = 2;
+	cout1[4][3] = 2;
+	cout1[4][4] = 8;
+	
+	cout<<"****Test estSymetrique****"<<endl;
+	if(algo.estSymetrique(cout1)) cout<<"C'est symetrique"<<endl;
+	cout1[5][5] = 6;
+	if(algo.estSymetrique(cout1)) cout<<"C'est symetrique apres changer [5][5]"<<endl;
+	cout1[3][5] = 10;
+	if(!algo.estSymetrique(cout1)) cout<<"C'est asymetrique apres changer [3][5]"<<endl;
+	
+	algo.del_matrice(cout1);
+	
 			
 	return 0;
 }
